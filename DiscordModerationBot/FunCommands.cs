@@ -29,6 +29,19 @@ namespace DiscordModerationBot
             await ctx.Channel.SendMessageAsync((num1 + num2).ToString());
         }
 
+        [Command("hello")]
+        public async Task Hello(CommandContext ctx)
+        {
+            var helloEmbed = new DiscordEmbedBuilder
+            {
+                Title = "Hello, " + ctx.User.Username + ".",
+                ImageUrl = ctx.User.AvatarUrl,
+                Color = DiscordColor.Green
+            };
+
+            var helloMessage = await ctx.Channel.SendMessageAsync(embed: helloEmbed).ConfigureAwait(false);
+        }
+
         [Command("test")]
         public async Task Join(CommandContext ctx)
         {
