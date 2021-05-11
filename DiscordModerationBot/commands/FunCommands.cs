@@ -69,7 +69,7 @@ namespace DiscordModerationBot
 
             if (reactionResult.Result.Emoji == thumbsUpEmoji)
             {
-                var role = ctx.Guild.GetRole(841451973441093666);
+                var role = ctx.Guild.GetRole(841444470516088883);
                 await ctx.Member.GrantRoleAsync(role).ConfigureAwait(false);
             }
         }

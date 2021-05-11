@@ -1,4 +1,5 @@
-﻿using DSharpPlus;
+﻿using DiscordModerationBot.commands;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
@@ -54,6 +55,8 @@ namespace DiscordModerationBot
             Commands = Client.UseCommandsNext(commandsConfig);
 
             Commands.RegisterCommands<FunCommands>();
+            Commands.RegisterCommands<ModerationCommands>();
+            Commands.RegisterCommands<InfoCommands>();
 
             await Client.ConnectAsync();
 
