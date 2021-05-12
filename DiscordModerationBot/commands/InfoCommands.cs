@@ -27,7 +27,7 @@ namespace DiscordModerationBot.commands
                 Timestamp = DateTime.Now
             };
 
-            var statusMessage = await ctx.Channel.SendMessageAsync(embed: statusEmbed);
+            var statusMessage = await ctx.Channel.SendMessageAsync(embed: statusEmbed).ConfigureAwait(false);
         }
 
         [Command("userinfo")]
@@ -48,8 +48,9 @@ namespace DiscordModerationBot.commands
                     Timestamp = DateTime.Now
                 };
 
-                var currentUserMessage = await ctx.Channel.SendMessageAsync(embed: currentUserEmbed);
-            } else
+                await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
+            } 
+            else
             {
                 DiscordMember member = (DiscordMember) ctx.User;
                 var currentUserEmbed = new DiscordEmbedBuilder
@@ -62,7 +63,7 @@ namespace DiscordModerationBot.commands
                     Timestamp = DateTime.Now
                 };
 
-                var currentUserMessage = await ctx.Channel.SendMessageAsync(embed: currentUserEmbed);
+                await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
             }
         }
     }
