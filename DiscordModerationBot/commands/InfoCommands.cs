@@ -66,5 +66,27 @@ namespace DiscordModerationBot.commands
                 await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
             }
         }
+
+        [Command("credits")]
+        [Description("Displays a list of everyone who helped develop and test the bot.")]
+        [RequireRoles(RoleCheckMode.All)]
+        public async Task CreditsAsync(CommandContext ctx) 
+        {
+            var creditsEmbed = new DiscordEmbedBuilder
+            {
+                Title = "Special Thanks to everyone on this list!",
+                Description = "Developers:\n" +
+                              "ScyferHQ\n" +
+                              "Testers:\n" +
+                              "Dayne, aka Orion/UltimateOrion\n" +
+                              "C41cken\n" +
+                              "Laserblaster13\n" +
+                              "Bernardo, aka 4raer",
+                Color = DiscordColor.Cyan,
+                Timestamp = DateTime.Now
+            };
+
+            await ctx.Channel.SendMessageAsync(embed: creditsEmbed).ConfigureAwait(false);
+        }
     }
 }
