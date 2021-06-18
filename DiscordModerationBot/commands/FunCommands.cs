@@ -8,6 +8,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
+
+/********************************************************************************************
+* Class: FunCommands
+* Description: Contains commands that are random and fun.
+* Developer: ScyferHQ
+* Last Update: 16/05/2021 at 11:02pm
+*******************************************************************************************/
+
 namespace DiscordModerationBot
 {
     class FunCommands : BaseCommandModule 
@@ -21,7 +29,7 @@ namespace DiscordModerationBot
 
         [Command("add")]
         [Description("Adds 2 numbers together.")]
-        [RequireRoles(RoleCheckMode.All, "Moderator", "Owner")]
+        [RequireRoles(RoleCheckMode.All)]
         public async Task Add(CommandContext ctx, 
             [Description("First number")] int num1, 
             [Description("Second number.")] int num2)

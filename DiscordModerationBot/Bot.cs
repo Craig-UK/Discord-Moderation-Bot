@@ -12,6 +12,14 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
+
+/********************************************************************************************
+* Class: Bot
+* Description: Initialise the bot.
+* Developer: ScyferHQ
+* Last Update: 23/05/2021 at 10:34pm
+*******************************************************************************************/
+
 namespace DiscordModerationBot
 {
     class Bot
@@ -57,6 +65,7 @@ namespace DiscordModerationBot
             Commands.RegisterCommands<FunCommands>();
             Commands.RegisterCommands<ModerationCommands>();
             Commands.RegisterCommands<InfoCommands>();
+            Commands.RegisterCommands<UserCommands>();
 
             await Client.ConnectAsync();
 

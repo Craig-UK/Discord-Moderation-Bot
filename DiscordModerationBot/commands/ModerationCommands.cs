@@ -8,6 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
+
+/********************************************************************************************
+* Class: ModerationCommands
+* Description: Contains commands that will be used for moderatiion purposes.
+* Developer: ScyferHQ
+* Last Update: 23/05/2021 at 9.39pm
+*******************************************************************************************/
+
 namespace DiscordModerationBot.commands
 {
     class ModerationCommands : BaseCommandModule
@@ -15,6 +23,7 @@ namespace DiscordModerationBot.commands
         [Command("purge")]
         [Description("Delete the specified amount of messages from the current channel.")]
         [RequirePermissions(DSharpPlus.Permissions.ManageMessages)]
+        [RequireRoles(RoleCheckMode.Any, "Owner", "Admin", "Administrator", "Mod", "Moderator")]
         public async Task DeleteMessagesAsync(CommandContext ctx, 
                                               [Description("Number of messages to delete.")] int messages)
         {
@@ -324,13 +333,14 @@ namespace DiscordModerationBot.commands
 
             DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
 
+            string date = DateTime.Now.Day + "/" + DateTime.Now.Month + "/" + DateTime.Now.Year + " " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second;
+
             if (reason == null)
             {
                 var unmuteMemberEmbed = new DiscordEmbedBuilder
                 {
                     Title = "Member Unmuted",
-                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" 
-                                  + DateTime.Now.Second,
+                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + date,
                     Timestamp = DateTime.Now,
                     ImageUrl = ctx.User.AvatarUrl
                 };
