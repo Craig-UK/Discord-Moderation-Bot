@@ -1,6 +1,7 @@
 ﻿using DiscordModerationBot.commands;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
+using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
@@ -12,6 +13,14 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
+
+/********************************************************************************************
+* Class: Bot
+* Description: Initialise the bot.
+* Developer: ScyferHQ
+* Last Update: 29/06/2021 at 11.33pm
+*******************************************************************************************/
+
 namespace DiscordModerationBot
 {
     class Bot
@@ -19,6 +28,7 @@ namespace DiscordModerationBot
         public DiscordClient Client { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
+        public InfoCommands Info { get; private set; }
 
         public async Task RunAsync()
         {
@@ -47,6 +57,32 @@ namespace DiscordModerationBot
                 Timeout = TimeSpan.FromMinutes(2)
             });
 
+            Info = new InfoCommands();
+
+            Client.MessageReactionAdded += async (s, e) =>
+            {
+                DiscordMember member = (DiscordMember)e.User;
+                var emoji = DiscordEmoji.FromName(Client, ":white_check_mark:");
+                //var role = Info.Role;
+                var role = e.Guild.GetRole(858446619132428308);
+                if (e.Emoji == emoji)
+                {
+                    await member.GrantRoleAsync(role);
+                }
+            };
+
+            Client.MessageReactionRemoved += async (s, e) =>
+            {
+                DiscordMember member = (DiscordMember)e.User;
+                var emoji = DiscordEmoji.FromName(Client, ":white_check_mark:");
+                //var role = Info.Role;
+                var role = e.Guild.GetRole(858446619132428308);
+                if (e.Emoji == emoji)
+                {
+                    await member.RevokeRoleAsync(role);
+                }
+            };
+
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new string[] { configjson.Prefix }
@@ -57,6 +93,7 @@ namespace DiscordModerationBot
             Commands.RegisterCommands<FunCommands>();
             Commands.RegisterCommands<ModerationCommands>();
             Commands.RegisterCommands<InfoCommands>();
+            Commands.RegisterCommands<UserCommands>();
 
             await Client.ConnectAsync();
 
