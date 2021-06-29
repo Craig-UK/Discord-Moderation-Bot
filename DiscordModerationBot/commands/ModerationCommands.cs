@@ -7,19 +7,22 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Linq;
 
 
 /********************************************************************************************
 * Class: ModerationCommands
-* Description: Contains commands that will be used for moderatiion purposes.
+* Description: Contains commands that will be used for moderation purposes.
 * Developer: ScyferHQ
-* Last Update: 23/05/2021 at 9.39pm
+* Last Update: 27/06/2021 at 4.36pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot.commands
 {
     class ModerationCommands : BaseCommandModule
     {
+        public DiscordChannel LogsChannel { get; private set; }
+
         [Command("purge")]
         [Description("Delete the specified amount of messages from the current channel.")]
         [RequirePermissions(DSharpPlus.Permissions.ManageMessages)]
@@ -45,9 +48,9 @@ namespace DiscordModerationBot.commands
                 Embed = bulkDeleteEmbed
             };
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
-            await messageToSend.SendAsync(logs).ConfigureAwait(false);
+            await messageToSend.SendAsync(channel).ConfigureAwait(false);
         }
 
         [Command("ban")]
@@ -62,7 +65,7 @@ namespace DiscordModerationBot.commands
             await member.BanAsync(delete_message_days, reason);
             await ctx.Guild.BanMemberAsync(member, delete_message_days, reason);
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
             if (delete_message_days == 0 && reason == null)
             {
@@ -81,7 +84,7 @@ namespace DiscordModerationBot.commands
                     Embed = banMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
 
             if (delete_message_days > 0 && reason == null)
@@ -101,7 +104,7 @@ namespace DiscordModerationBot.commands
                     Embed = banMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
             else
             {
@@ -122,7 +125,7 @@ namespace DiscordModerationBot.commands
                         Embed = banMemberEmbed
                     };
 
-                    await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
                 }
                 if (delete_message_days == 0 && reason != null)
                 {
@@ -141,7 +144,7 @@ namespace DiscordModerationBot.commands
                         Embed = banMemberEmbed
                     };
 
-                    await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
                 }
             }
         }
@@ -156,7 +159,7 @@ namespace DiscordModerationBot.commands
         {
             await user.UnbanAsync(ctx.Guild, reason).ConfigureAwait(false);
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
             if (reason == null)
             {
@@ -175,7 +178,7 @@ namespace DiscordModerationBot.commands
                     Embed = unbanMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
             else
             {
@@ -194,7 +197,7 @@ namespace DiscordModerationBot.commands
                     Embed = unbanMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
         }
 
@@ -208,7 +211,7 @@ namespace DiscordModerationBot.commands
         {
             await member.RemoveAsync(reason);
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
             if (reason == null)
             {
@@ -227,7 +230,7 @@ namespace DiscordModerationBot.commands
                     Embed = kickMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
             else
             {
@@ -246,7 +249,7 @@ namespace DiscordModerationBot.commands
                     Embed = kickMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
         }
 
@@ -261,14 +264,14 @@ namespace DiscordModerationBot.commands
             var role = ctx.Guild.GetRole(842550847904677938);
             await member.GrantRoleAsync(role).ConfigureAwait(false);
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
             if (reason == null)
             {
                 var muteMemberEmbed = new DiscordEmbedBuilder
                 {
                     Title = "Member Muted",
-                    Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + numSeconds*60 + " seconds ",
+                    Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + numSeconds + " seconds ",
                     Timestamp = DateTime.Now,
                     ImageUrl = ctx.User.AvatarUrl
                 };
@@ -280,7 +283,7 @@ namespace DiscordModerationBot.commands
                     Embed = muteMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
             else
             {
@@ -288,7 +291,7 @@ namespace DiscordModerationBot.commands
                 {
                     Title = "Member Muted",
                     Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason + 
-                                  " for " + numSeconds*60 + " seconds ",
+                                  " for " + numSeconds + " seconds ",
                     Timestamp = DateTime.Now,
                     ImageUrl = ctx.User.AvatarUrl
                 };
@@ -300,19 +303,12 @@ namespace DiscordModerationBot.commands
                     Embed = muteMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
 
-
-            numSeconds = numSeconds * 60;
-            System.Timers.Timer timer;
-
-            while (numSeconds > 0)
-            {
-                timer = new System.Timers.Timer(numSeconds * 1000);
-                await Task.Delay(1000);
-                numSeconds--;
-            }
+            //System.Timers.Timer timer;
+            TimeSpan time = TimeSpan.FromSeconds(numSeconds);
+            await Task.Delay(time);
             await TextUnmuteMemberAsync(ctx, member, "Automatically unmuted by " + ctx.Client.CurrentUser.Username);
 
             //if (numSeconds == 0)
@@ -331,16 +327,14 @@ namespace DiscordModerationBot.commands
             var role = ctx.Guild.GetRole(842550847904677938);
             await member.RevokeRoleAsync(role, reason);
 
-            DiscordChannel logs = await ctx.Client.GetChannelAsync(841716264454848555);
-
-            string date = DateTime.Now.Day + "/" + DateTime.Now.Month + "/" + DateTime.Now.Year + " " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second;
+            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
 
             if (reason == null)
             {
                 var unmuteMemberEmbed = new DiscordEmbedBuilder
                 {
                     Title = "Member Unmuted",
-                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + date,
+                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now,
                     Timestamp = DateTime.Now,
                     ImageUrl = ctx.User.AvatarUrl
                 };
@@ -352,15 +346,14 @@ namespace DiscordModerationBot.commands
                     Embed = unmuteMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
             else
             {
                 var unmuteMemberEmbed = new DiscordEmbedBuilder
                 {
                     Title = "Member Unmuted",
-                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":"
-                                  + DateTime.Now.Second + " for " + reason,
+                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now + " for " + reason,
                     Timestamp = DateTime.Now,
                     ImageUrl = ctx.User.AvatarUrl
                 };
@@ -372,8 +365,50 @@ namespace DiscordModerationBot.commands
                     Embed = unmuteMemberEmbed
                 };
 
-                await messageToSend.SendAsync(logs).ConfigureAwait(false);
+                await messageToSend.SendAsync(channel).ConfigureAwait(false);
             }
+        }
+
+        [Command("setlogschannel")]
+        [Description("Set the channel that all logs will be sent to.")]
+        [RequireRoles(RoleCheckMode.Any, "Owner", "Admin", "Administrator", "Mod", "Moderator")]
+        public async Task SetLogsChannelAsync(CommandContext ctx, 
+                                              [Description("Channel name (#[channelname]) or channel id (18 number id) to send your server's logs to.")] DiscordChannel logs)
+        {
+            LogsChannel = await GetChannelNamesAsync(ctx, logs.Name);
+            var logsChannelSet = new DiscordEmbedBuilder
+            {
+                Title = "Logs Channel Successfully set!",
+                Description = $"Logs channel was successfully set to {LogsChannel.Name} for Server {ctx.Guild.Name}",
+                Timestamp = DateTime.Now,
+                Color = DiscordColor.Green,
+                ImageUrl = ctx.Guild.BannerUrl
+            };
+
+            await ctx.Channel.SendMessageAsync(embed: logsChannelSet).ConfigureAwait(false);
+        }
+
+        //[Command("getchannels")]
+        //public async Task<DiscordChannel> GetChannelNamesAsync(CommandContext ctx, string channelName)
+        //{
+        //    var channels = await ctx.Guild.GetChannelsAsync();
+        //    var selectedChannels = channels.Where(c => c.Name == channelName);
+        //    foreach (DiscordChannel discordChannel in selectedChannels)
+        //    {
+        //        return discordChannel;
+        //    }
+        //    return null;
+        //}
+
+        public async Task<DiscordChannel> GetChannelNamesAsync(CommandContext ctx, string channelName)
+        {
+            var channels = await ctx.Guild.GetChannelsAsync();
+            var selectedChannels = channels.Where(c => c.Name == channelName);
+            foreach (DiscordChannel discordChannel in selectedChannels)
+            {
+                return discordChannel;
+            }
+            return null;
         }
     }
 }
