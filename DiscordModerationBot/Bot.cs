@@ -45,7 +45,8 @@ namespace DiscordModerationBot
                 Token = configjson.Token,
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
-                MinimumLogLevel = LogLevel.Debug
+                MinimumLogLevel = LogLevel.Debug,
+                Intents = DiscordIntents.All
             };
 
             Client = new DiscordClient(config);
