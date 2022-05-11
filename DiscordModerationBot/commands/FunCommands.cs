@@ -29,7 +29,7 @@ namespace DiscordModerationBot
 
         [Command("add")]
         [Description("Adds 2 numbers together.")]
-        [RequireRoles(RoleCheckMode.All)]
+        [RequireRoles(RoleCheckMode.Any, "Admin", "Member")]
         public async Task Add(CommandContext ctx, 
             [Description("First number")] int num1, 
             [Description("Second number.")] int num2)
