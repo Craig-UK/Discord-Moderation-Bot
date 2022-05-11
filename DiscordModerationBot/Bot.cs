@@ -17,8 +17,8 @@ using System.Threading.Tasks;
 /********************************************************************************************
 * Class: Bot
 * Description: Initialise the bot.
-* Developer: ScyferHQ
-* Last Update: 29/06/2021 at 11.33pm
+* Developer: Craig Climie
+* Last Update: 11/05/2022 at 5.26pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot

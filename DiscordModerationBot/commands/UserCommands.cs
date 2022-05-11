@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 /********************************************************************************************
 * Class: UserCommands
 * Description: Contains commands that does something with a user.
-* Developer: ScyferHQ
-* Last Update: 23/05/2021 at 11:37pm
+* Developer: Craig Climie
+* Last Update: 11/05/2022 at 5.27pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot.commands
@@ -75,7 +75,7 @@ namespace DiscordModerationBot.commands
                     Timestamp = DateTime.Now
                 };
 
-                var errorMessage = await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
     }

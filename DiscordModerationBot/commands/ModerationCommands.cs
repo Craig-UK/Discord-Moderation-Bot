@@ -13,8 +13,8 @@ using System.Linq;
 /********************************************************************************************
 * Class: ModerationCommands
 * Description: Contains commands that will be used for moderation purposes.
-* Developer: ScyferHQ
-* Last Update: 27/06/2021 at 4.36pm
+* Developer: Craig Climie
+* Last Update: 11/05/2022 at 5.27pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot.commands
@@ -30,27 +30,55 @@ namespace DiscordModerationBot.commands
         public async Task DeleteMessagesAsync(CommandContext ctx, 
                                               [Description("Number of messages to delete.")] int messages)
         {
-            IEnumerable<DiscordMessage> numMessages = await ctx.Channel.GetMessagesAsync(messages);
-            await ctx.Channel.DeleteMessagesAsync(numMessages);
-
-            var bulkDeleteEmbed = new DiscordEmbedBuilder
+            try
             {
-                Title = "Messages Deleted",
-                Description = ctx.Member.Username + " Deleted " + messages + " messages in channel " + ctx.Channel.Name + " at " + ctx.Message.Timestamp.DateTime,
-                Timestamp = DateTime.Now,
-                ImageUrl = ctx.User.AvatarUrl
-            };
-            
-            // This section sends a message into the "logs"
-            // channel.
-            var messageToSend = new DiscordMessageBuilder
+                if (messages == 0)
+                {
+                    throw new Exception("Number of messages to delete must be greater than 0");
+                }
+                else
+                {
+                    if (LogsChannel == null)
+                    {
+                        throw new Exception("You have to set a channel for your logs to be sent into");
+                    }
+
+                    IEnumerable<DiscordMessage> numMessages = await ctx.Channel.GetMessagesAsync(messages);
+                    await ctx.Channel.DeleteMessagesAsync(numMessages);
+
+                    var bulkDeleteEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Messages Deleted",
+                        Description = ctx.Member.Username + " Deleted " + messages + " messages in channel " + ctx.Channel.Name + " at " + ctx.Message.Timestamp.DateTime,
+                        Timestamp = DateTime.Now,
+                        ImageUrl = ctx.User.AvatarUrl
+                    };
+
+                    // This section sends a message into the "logs"
+                    // channel.
+                    var messageToSend = new DiscordMessageBuilder
+                    {
+                        Embed = bulkDeleteEmbed
+                    };
+
+                    DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
             {
-                Embed = bulkDeleteEmbed
-            };
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
 
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
 
         [Command("ban")]
@@ -62,90 +90,120 @@ namespace DiscordModerationBot.commands
                                          [Description("The amount of days to delete messages from this member.")] int delete_message_days = 0, 
                                          [Description("Reason for banning this member.")][RemainingText]string reason = null)
         {
-            await member.BanAsync(delete_message_days, reason);
-            await ctx.Guild.BanMemberAsync(member, delete_message_days, reason);
-
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            if (delete_message_days == 0 && reason == null)
+            try
             {
-                var banMemberEmbed = new DiscordEmbedBuilder
+                var role = member.Roles.FirstOrDefault(x => x.Name == "Owner" || x.Name == "Admin" || x.Name == "Administrator" || x.Name == "Mod" || x.Name == "Moderator");
+
+                if (member.Roles.Contains(role))
                 {
-                    Title = "Member Banned",
-                    Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
-
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = banMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
-            }
-
-            if (delete_message_days > 0 && reason == null)
-            {
-                var banMemberEmbed = new DiscordEmbedBuilder
-                {
-                    Title = "Member Banned",
-                    Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
-
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = banMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
-            }
-            else
-            {
-                if (delete_message_days > 0 && reason != null)
-                {
-                    var banMemberEmbed = new DiscordEmbedBuilder
-                    {
-                        Title = "Member Banned",
-                        Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
-                        Timestamp = DateTime.Now,
-                        ImageUrl = ctx.User.AvatarUrl
-                    };
-
-                    // This section sends a message into the "logs"
-                    // channel.
-                    var messageToSend = new DiscordMessageBuilder
-                    {
-                        Embed = banMemberEmbed
-                    };
-
-                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    throw new Exception("Cannot ban a member who is a Moderator or above");
                 }
-                if (delete_message_days == 0 && reason != null)
+                else
                 {
-                    var banMemberEmbed = new DiscordEmbedBuilder
+                    if (LogsChannel == null)
                     {
-                        Title = "Member Banned",
-                        Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
-                        Timestamp = DateTime.Now,
-                        ImageUrl = ctx.User.AvatarUrl
-                    };
+                        throw new Exception("You have to set a channel for your logs to be sent into");
+                    }
 
-                    // This section sends a message into the "logs"
-                    // channel.
-                    var messageToSend = new DiscordMessageBuilder
+                    await member.BanAsync(delete_message_days, reason);
+                    await ctx.Guild.BanMemberAsync(member, delete_message_days, reason);
+
+                    DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                    if (delete_message_days == 0 && reason == null)
                     {
-                        Embed = banMemberEmbed
-                    };
+                        var banMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Banned",
+                            Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
 
-                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = banMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+
+                    if (delete_message_days > 0 && reason == null)
+                    {
+                        var banMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Banned",
+                            Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
+
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = banMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        if (delete_message_days > 0 && reason != null)
+                        {
+                            var banMemberEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Member Banned",
+                                Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
+                                Timestamp = DateTime.Now,
+                                ImageUrl = ctx.User.AvatarUrl
+                            };
+
+                            // This section sends a message into the "logs"
+                            // channel.
+                            var messageToSend = new DiscordMessageBuilder
+                            {
+                                Embed = banMemberEmbed
+                            };
+
+                            await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                        }
+                        if (delete_message_days == 0 && reason != null)
+                        {
+                            var banMemberEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Member Banned",
+                                Description = member.Username + "#" + member.Discriminator + " was banned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
+                                Timestamp = DateTime.Now,
+                                ImageUrl = ctx.User.AvatarUrl
+                            };
+
+                            // This section sends a message into the "logs"
+                            // channel.
+                            var messageToSend = new DiscordMessageBuilder
+                            {
+                                Embed = banMemberEmbed
+                            };
+
+                            await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                        }
+                    }
                 }
+            } 
+            catch (Exception ex) 
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
+
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -157,47 +215,68 @@ namespace DiscordModerationBot.commands
                                            [Description("User to unban.")] DiscordUser user,
                                            [Description("Reason for unbanning this user.")][RemainingText]string reason = null)
         {
-            await user.UnbanAsync(ctx.Guild, reason).ConfigureAwait(false);
-
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            if (reason == null)
+            try
             {
-                var unbanMemberEmbed = new DiscordEmbedBuilder
+                if (LogsChannel == null)
                 {
-                    Title = "Member Unbanned",
-                    Description = user.Username + "#" + user.Discriminator + " was unbanned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
+                    throw new Exception("You have to set a channel for your logs to be sent into");
+                }
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
+                await user.UnbanAsync(ctx.Guild, reason).ConfigureAwait(false);
+
+                DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                if (reason == null)
                 {
-                    Embed = unbanMemberEmbed
-                };
+                    var unbanMemberEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Member Unbanned",
+                        Description = user.Username + "#" + user.Discriminator + " was unbanned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
+                        Timestamp = DateTime.Now,
+                        ImageUrl = ctx.User.AvatarUrl
+                    };
 
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    // This section sends a message into the "logs"
+                    // channel.
+                    var messageToSend = new DiscordMessageBuilder
+                    {
+                        Embed = unbanMemberEmbed
+                    };
+
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                }
+                else
+                {
+                    var unbanMemberEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Member Unbanned",
+                        Description = user.Username + "#" + user.Discriminator + " was unbanned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
+                        Timestamp = DateTime.Now,
+                        ImageUrl = ctx.User.AvatarUrl
+                    };
+
+                    // This section sends a message into the "logs"
+                    // channel.
+                    var messageToSend = new DiscordMessageBuilder
+                    {
+                        Embed = unbanMemberEmbed
+                    };
+
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                }
             }
-            else
+            catch(Exception ex)
             {
-                var unbanMemberEmbed = new DiscordEmbedBuilder
+                var error = new DiscordEmbedBuilder
                 {
-                    Title = "Member Unbanned",
-                    Description = user.Username + "#" + user.Discriminator + " was unbanned from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
                 };
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = unbanMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -209,47 +288,77 @@ namespace DiscordModerationBot.commands
                                           [Description("Member to kick.")]DiscordMember member,
                                           [Description("Reason for kicking this member.")][RemainingText]string reason = null)
         {
-            await member.RemoveAsync(reason);
-
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            if (reason == null)
+            try
             {
-                var kickMemberEmbed = new DiscordEmbedBuilder
-                {
-                    Title = "Member Kicked",
-                    Description = member.Username + "#" + member.Discriminator + " was kicked from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
+                var role = member.Roles.FirstOrDefault(x => x.Name == "Owner" || x.Name == "Admin" || x.Name == "Administrator" || x.Name == "Mod" || x.Name == "Moderator");
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
+                if (member.Roles.Contains(role))
                 {
-                    Embed = kickMemberEmbed
-                };
+                    throw new Exception("Cannot kick a member who is a Moderator or above");
+                }
+                else
+                {
+                    if (LogsChannel == null)
+                    {
+                        throw new Exception("You have to set a channel for your logs to be sent into");
+                    }
 
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    await member.RemoveAsync(reason);
+
+                    DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                    if (reason == null)
+                    {
+                        var kickMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Kicked",
+                            Description = member.Username + "#" + member.Discriminator + " was kicked from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime,
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
+
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = kickMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var kickMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Kicked",
+                            Description = member.Username + "#" + member.Discriminator + " was kicked from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
+
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = kickMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var kickMemberEmbed = new DiscordEmbedBuilder
+                var error = new DiscordEmbedBuilder
                 {
-                    Title = "Member Kicked",
-                    Description = member.Username + "#" + member.Discriminator + " was kicked from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
                 };
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = kickMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -261,60 +370,91 @@ namespace DiscordModerationBot.commands
                                               [Description("Amount of time to mute this member for (in seconds).")]int numSeconds,
                                               [Description("Reason for muting this member.")][RemainingText]string reason)
         {
-            var role = ctx.Guild.GetRole(842550847904677938);
-            await member.GrantRoleAsync(role).ConfigureAwait(false);
-
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            if (reason == null)
+            try
             {
-                var muteMemberEmbed = new DiscordEmbedBuilder
-                {
-                    Title = "Member Muted",
-                    Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + numSeconds + " seconds ",
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
+                var staffRole = member.Roles.FirstOrDefault(x => x.Name == "Owner" || x.Name == "Admin" || x.Name == "Administrator" || x.Name == "Mod" || x.Name == "Moderator");
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
+                if (member.Roles.Contains(staffRole))
                 {
-                    Embed = muteMemberEmbed
-                };
 
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    throw new Exception("Cannot mute a member who is a Moderator or above");
+                }
+                else
+                {
+                    if (LogsChannel == null)
+                    {
+                        throw new Exception("You have to set a channel for your logs to be sent into");
+                    }
+
+                    var role = ctx.Guild.GetRole(842550847904677938);
+                    await member.GrantRoleAsync(role).ConfigureAwait(false);
+
+                    DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                    if (reason == null)
+                    {
+                        var muteMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Muted",
+                            Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + numSeconds + " seconds ",
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
+
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = muteMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var muteMemberEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Member Muted",
+                            Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason +
+                                          " for " + numSeconds + " seconds ",
+                            Timestamp = DateTime.Now,
+                            ImageUrl = ctx.User.AvatarUrl
+                        };
+
+                        // This section sends a message into the "logs"
+                        // channel.
+                        var messageToSend = new DiscordMessageBuilder
+                        {
+                            Embed = muteMemberEmbed
+                        };
+
+                        await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    }
+
+                    TimeSpan time = TimeSpan.FromSeconds(numSeconds);
+                    await Task.Delay(time);
+                    await TextUnmuteMemberAsync(ctx, member, "Automatically unmuted by " + ctx.Client.CurrentUser.Username);
+                }
+
+                //System.Timers.Timer timer;
+                //if (numSeconds == 0)
+                //{
+                //    await TextUnmuteMemberAsync(ctx, member, "Automatically unmuted by " + ctx.Client.CurrentUser.Username);
+                //}
             }
-            else
+            catch (Exception ex)
             {
-                var muteMemberEmbed = new DiscordEmbedBuilder
+                var error = new DiscordEmbedBuilder
                 {
-                    Title = "Member Muted",
-                    Description = member.Username + "#" + member.Discriminator + " was muted from " + ctx.Guild.Name + " at " + ctx.Message.Timestamp.DateTime + " for " + reason + 
-                                  " for " + numSeconds + " seconds ",
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
                 };
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = muteMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
-
-            //System.Timers.Timer timer;
-            TimeSpan time = TimeSpan.FromSeconds(numSeconds);
-            await Task.Delay(time);
-            await TextUnmuteMemberAsync(ctx, member, "Automatically unmuted by " + ctx.Client.CurrentUser.Username);
-
-            //if (numSeconds == 0)
-            //{
-            //    await TextUnmuteMemberAsync(ctx, member, "Automatically unmuted by " + ctx.Client.CurrentUser.Username);
-            //}
         }
 
         [Command("unmute")]
@@ -324,48 +464,69 @@ namespace DiscordModerationBot.commands
                                                 [Description("Member to unmute.")]DiscordMember member,
                                                 [Description("Reason for unmuting this member.")][RemainingText]string reason = null)
         {
-            var role = ctx.Guild.GetRole(842550847904677938);
-            await member.RevokeRoleAsync(role, reason);
-
-            DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
-
-            if (reason == null)
+            try
             {
-                var unmuteMemberEmbed = new DiscordEmbedBuilder
+                if (LogsChannel == null)
                 {
-                    Title = "Member Unmuted",
-                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
-                };
+                    throw new Exception("You have to set a channel for your logs to be sent into");
+                }
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
+                var role = ctx.Guild.GetRole(842550847904677938);
+                await member.RevokeRoleAsync(role, reason);
+
+                DiscordChannel channel = await GetChannelNamesAsync(ctx, LogsChannel.Name);
+
+                if (reason == null)
                 {
-                    Embed = unmuteMemberEmbed
-                };
+                    var unmuteMemberEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Member Unmuted",
+                        Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now,
+                        Timestamp = DateTime.Now,
+                        ImageUrl = ctx.User.AvatarUrl
+                    };
 
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                    // This section sends a message into the "logs"
+                    // channel.
+                    var messageToSend = new DiscordMessageBuilder
+                    {
+                        Embed = unmuteMemberEmbed
+                    };
+
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                }
+                else
+                {
+                    var unmuteMemberEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Member Unmuted",
+                        Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now + " for " + reason,
+                        Timestamp = DateTime.Now,
+                        ImageUrl = ctx.User.AvatarUrl
+                    };
+
+                    // This section sends a message into the "logs"
+                    // channel.
+                    var messageToSend = new DiscordMessageBuilder
+                    {
+                        Embed = unmuteMemberEmbed
+                    };
+
+                    await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var unmuteMemberEmbed = new DiscordEmbedBuilder
+                var error = new DiscordEmbedBuilder
                 {
-                    Title = "Member Unmuted",
-                    Description = member.Username + "#" + member.Discriminator + " was unmuted from " + ctx.Guild.Name + " at " + DateTime.Now + " for " + reason,
-                    Timestamp = DateTime.Now,
-                    ImageUrl = ctx.User.AvatarUrl
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
                 };
 
-                // This section sends a message into the "logs"
-                // channel.
-                var messageToSend = new DiscordMessageBuilder
-                {
-                    Embed = unmuteMemberEmbed
-                };
-
-                await messageToSend.SendAsync(channel).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -375,17 +536,33 @@ namespace DiscordModerationBot.commands
         public async Task SetLogsChannelAsync(CommandContext ctx, 
                                               [Description("Channel name (#[channelname]) or channel id (18 number id) to send your server's logs to.")] DiscordChannel logs)
         {
-            LogsChannel = await GetChannelNamesAsync(ctx, logs.Name);
-            var logsChannelSet = new DiscordEmbedBuilder
+            try
             {
-                Title = "Logs Channel Successfully set!",
-                Description = $"Logs channel was successfully set to {LogsChannel.Name} for Server {ctx.Guild.Name}",
-                Timestamp = DateTime.Now,
-                Color = DiscordColor.Green,
-                ImageUrl = ctx.Guild.BannerUrl
-            };
+                LogsChannel = await GetChannelNamesAsync(ctx, logs.Name);
+                var logsChannelSet = new DiscordEmbedBuilder
+                {
+                    Title = "Logs Channel Successfully set!",
+                    Description = $"Logs channel was successfully set to {LogsChannel.Name} for Server {ctx.Guild.Name}",
+                    Timestamp = DateTime.Now,
+                    Color = DiscordColor.Green,
+                    ImageUrl = ctx.Guild.BannerUrl
+                };
 
-            await ctx.Channel.SendMessageAsync(embed: logsChannelSet).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: logsChannelSet).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
+
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
 
         //[Command("getchannels")]

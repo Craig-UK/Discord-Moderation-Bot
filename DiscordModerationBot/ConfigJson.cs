@@ -7,8 +7,8 @@ using System.Text;
 /********************************************************************************************
 * Class: ConfigJson
 * Description: Gets the token and prefix of the bot.
-* Developer: ScyferHQ
-* Last Update: 10/05/2021 at 1:52am
+* Developer: Craig Climie
+* Last Update: 11/05/2022 at 5.26pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot

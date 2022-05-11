@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 /********************************************************************************************
 * Class: FunCommands
 * Description: Contains commands that are random and fun.
-* Developer: ScyferHQ
-* Last Update: 16/05/2021 at 11:02pm
+* Developer: Craig Climie
+* Last Update: 11/05/2021 at 5.28pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot

@@ -16,8 +16,8 @@ using System.Threading.Tasks;
 /********************************************************************************************
 * Class: InfoCommands
 * Description: Contains commands that gets information about the server, bot, user or roles.
-* Developer: ScyferHQ
-* Last Update: 30/06/2021 at 12.20am
+* Developer: Craig Climie
+* Last Update: 11/05/2022 at 5.28pm
 *******************************************************************************************/
 
 namespace DiscordModerationBot.commands
@@ -31,18 +31,34 @@ namespace DiscordModerationBot.commands
         [Description("Displays the name, status, author and profile picture of the bot.")]
         public async Task BotStatusAsync(CommandContext ctx)
         {
-            var statusEmbed = new DiscordEmbedBuilder
+            try
             {
-                Title = "Bot Status",
-                Description = ctx.Client.CurrentUser.Username + "#" + ctx.Client.CurrentUser.Discriminator +
-                              "\nBot Status: " + UserStatus.Online +
-                              "\nBot Author: ScyferHQ",
-                Color = DiscordColor.Green,
-                ImageUrl = ctx.Member.AvatarUrl,
-                Timestamp = DateTime.Now
-            };
+                var statusEmbed = new DiscordEmbedBuilder
+                {
+                    Title = "Bot Status",
+                    Description = ctx.Client.CurrentUser.Username + "#" + ctx.Client.CurrentUser.Discriminator +
+                                  "\nBot Status: " + UserStatus.Online +
+                                  "\nBot Author: ScyferHQ",
+                    Color = DiscordColor.Green,
+                    ImageUrl = ctx.Member.AvatarUrl,
+                    Timestamp = DateTime.Now
+                };
 
-            var statusMessage = await ctx.Channel.SendMessageAsync(embed: statusEmbed).ConfigureAwait(false);
+                var statusMessage = await ctx.Channel.SendMessageAsync(embed: statusEmbed).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
+
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
 
         [Command("userinfo")]
@@ -51,34 +67,49 @@ namespace DiscordModerationBot.commands
         public async Task UserInfoAsync(CommandContext ctx,
                                         [Description("User to check info for. Defaults to the user who initiated the command.")] DiscordUser user = null)
         {
-            if (user == null)
+            try
             {
-                var currentUserEmbed = new DiscordEmbedBuilder
+                if (user == null)
                 {
-                    Title = ctx.User.Username + "'s Info",
-                    Description = ctx.User.Username + "#" + ctx.User.Discriminator +
-                              "\nCreated On: " + ctx.User.CreationTimestamp +
-                              "\nJoined " + ctx.Guild.Name + " On: " + ctx.Member.JoinedAt,
-                    ImageUrl = ctx.User.AvatarUrl,
-                    Timestamp = DateTime.Now
-                };
+                    var currentUserEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = ctx.User.Username + "'s Info",
+                        Description = ctx.User.Username + "#" + ctx.User.Discriminator +
+                                  "\nCreated On: " + ctx.User.CreationTimestamp +
+                                  "\nJoined " + ctx.Guild.Name + " On: " + ctx.Member.JoinedAt,
+                        ImageUrl = ctx.User.AvatarUrl
+                    }.WithTimestamp(DateTime.Now); // Another way to add a timestamp to an embed.
 
-                await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
+                }
+                else
+                {
+                    DiscordMember member = (DiscordMember)ctx.User;
+                    var currentUserEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = user.Username + "'s Info",
+                        Description = user.Username + "#" + user.Discriminator +
+                                  "\nCreated On: " + user.CreationTimestamp +
+                                  "\nJoined " + ctx.Guild.Name + " On: " + member.JoinedAt,
+                        ImageUrl = user.AvatarUrl,
+                        Timestamp = DateTime.Now
+                    };
+
+                    await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                DiscordMember member = (DiscordMember)ctx.User;
-                var currentUserEmbed = new DiscordEmbedBuilder
+                var error = new DiscordEmbedBuilder
                 {
-                    Title = user.Username + "'s Info",
-                    Description = user.Username + "#" + user.Discriminator +
-                              "\nCreated On: " + user.CreationTimestamp +
-                              "\nJoined " + ctx.Guild.Name + " On: " + member.JoinedAt,
-                    ImageUrl = user.AvatarUrl,
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
                     Timestamp = DateTime.Now
                 };
 
-                await ctx.Channel.SendMessageAsync(embed: currentUserEmbed).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -86,21 +117,38 @@ namespace DiscordModerationBot.commands
         [Description("Displays a list of everyone who helped develop and test the bot.")]
         public async Task CreditsAsync(CommandContext ctx)
         {
-            var creditsEmbed = new DiscordEmbedBuilder
+            try
             {
-                Title = "Special Thanks to everyone on this list!",
-                Description = "Developers:\n" +
-                              "ScyferHQ\n" +
-                              "Testers:\n" +
-                              "Dayne, aka Orion/UltimateOrion\n" +
-                              "C41cken\n" +
-                              "Laserblaster13\n" +
-                              "Bernardo, aka 4raer",
-                Color = DiscordColor.Cyan,
-                Timestamp = DateTime.Now
-            };
+                var creditsEmbed = new DiscordEmbedBuilder
+                {
+                    Title = "Special Thanks to everyone on this list!",
+                    Description = "Developers:\n" +
+                                  "ScyferHQ\n" +
+                                  "Testers:\n" +
+                                  "Dayne, aka Orion/UltimateOrion\n" +
+                                  "C41cken\n" +
+                                  "Laserblaster13\n" +
+                                  "Bernardo, aka 4raer\n" +
+                                  "Willy",
+                    Color = DiscordColor.Cyan,
+                    Timestamp = DateTime.Now
+                };
 
-            await ctx.Channel.SendMessageAsync(embed: creditsEmbed).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: creditsEmbed).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
+
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
 
         [Command("roleinfo")]
@@ -108,32 +156,40 @@ namespace DiscordModerationBot.commands
         public async Task RoleInfoAsync(CommandContext ctx,
                                         [RemainingText][Description("Role to get information about.")] DiscordRole role)
         {
-            if (role == null)
+            try
             {
-                var roleInfoErrorEmbed = new DiscordEmbedBuilder
+                if (role == null)
                 {
-                    Title = "An Error Occurred.",
-                    Description = "Please @ mention a role to see its information.",
+                    throw new Exception("Please @ mention a role to see its information");
+                }
+                else
+                {
+                    var roleInfoEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = role.Name + "'s Info",
+                        Description = "Role name: " + role.Name +
+                                      "\nRole Colour: " + role.Color +
+                                      "\nCreated On: " + role.CreationTimestamp +
+                                      "\nPermissions: " + role.Permissions.ToPermissionString(),
+                        Color = role.Color,
+                        Timestamp = DateTime.Now
+                    };
+
+                    await ctx.Channel.SendMessageAsync(embed: roleInfoEmbed).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
                     Color = DiscordColor.Red,
                     Timestamp = DateTime.Now
                 };
 
-                await ctx.Channel.SendMessageAsync(embed: roleInfoErrorEmbed).ConfigureAwait(false);
-            }
-            else
-            {
-                var roleInfoEmbed = new DiscordEmbedBuilder
-                {
-                    Title = role.Name + "'s Info",
-                    Description = "Role name: " + role.Name +
-                                  "\nRole Colour: " + role.Color +
-                                  "\nCreated On: " + role.CreationTimestamp +
-                                  "\nPermissions: " + role.Permissions.ToPermissionString(),
-                    Color = role.Color,
-                    Timestamp = DateTime.Now
-                };
-
-                await ctx.Channel.SendMessageAsync(embed: roleInfoEmbed).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
             }
         }
 
@@ -142,18 +198,35 @@ namespace DiscordModerationBot.commands
         [Description("Displays the name of the server, amount of members and when the server was created.")]
         public async Task ServerInfoAsync(CommandContext ctx)
         {
-            var serverInfoEmbed = new DiscordEmbedBuilder
+            try
             {
-                Title = $"Information about {ctx.Guild.Name}",
-                Description = $"Name of the server/guild: {ctx.Guild.Name}" +
-                              $"\nMembers in the server: {ctx.Guild.MemberCount}" +
-                              $"\nCreated On: {ctx.Guild.CreationTimestamp}",
-                ImageUrl = ctx.Guild.BannerUrl,
-                Color = ctx.Member.Color,
-                Timestamp = DateTime.Now
-            };
+                var serverInfoEmbed = new DiscordEmbedBuilder
+                {
+                    Title = $"Information about {ctx.Guild.Name}",
+                    Description = $"Name of the server/guild: {ctx.Guild.Name}" +
+                                  $"\nMembers in the server: {ctx.Guild.MemberCount}" +
+                                  $"\nAmount of roles in the server: {ctx.Guild.Roles.Count}" +
+                                  $"\nCreated On: {ctx.Guild.CreationTimestamp}",
+                    ImageUrl = ctx.Guild.BannerUrl,
+                    Color = ctx.Member.Color,
+                    Timestamp = DateTime.Now
+                };
 
-            await ctx.Channel.SendMessageAsync(embed: serverInfoEmbed).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync(embed: serverInfoEmbed).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
+
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
 
         [Command("createrules")]
@@ -163,26 +236,42 @@ namespace DiscordModerationBot.commands
                                            [Description("Channel ID to send the rules embed in.")] DiscordChannel rulesChannel,
                                            [Description("The rules of your Discord Server.")][RemainingText] params string[] rules)
         {
-            var createRulesEmbed = new DiscordEmbedBuilder();
-            var emoji = DiscordEmoji.FromName(ctx.Client, ":white_check_mark:");
-
-            //Role = role;
-
-            foreach (string r in rules)
+            try
             {
-                rulesStringOut = rulesStringOut + r + "\n";
+                var createRulesEmbed = new DiscordEmbedBuilder();
+                var emoji = DiscordEmoji.FromName(ctx.Client, ":white_check_mark:");
+
+                //Role = role;
+
+                foreach (string r in rules)
+                {
+                    rulesStringOut = rulesStringOut + r + "\n";
+                }
+
+                createRulesEmbed = new DiscordEmbedBuilder(createRulesEmbed)
+                {
+                    Title = $"Rules for {ctx.Guild.Name}",
+                    Description = $"{rulesStringOut}\n Please react to the :white_check_mark: below to agree to these rules.",
+                    ImageUrl = ctx.Guild.BannerUrl,
+                    Timestamp = DateTime.Now
+                };
+
+                var rulesMessage = await rulesChannel.SendMessageAsync(embed: createRulesEmbed).ConfigureAwait(false);
+                await rulesMessage.CreateReactionAsync(emoji);
             }
-
-            createRulesEmbed = new DiscordEmbedBuilder(createRulesEmbed)
+            catch (Exception ex)
             {
-                Title = $"Rules for {ctx.Guild.Name}",
-                Description = $"{rulesStringOut}\n Please react to the :white_check_mark: below to agree to these rules.",
-                ImageUrl = ctx.Guild.BannerUrl,
-                Timestamp = DateTime.Now
-            };
+                var error = new DiscordEmbedBuilder
+                {
+                    Title = "An error occurred.",
+                    Description = $"An error occurred while trying to perform the command." +
+                                  $"\nError: {ex.Message}.",
+                    Color = DiscordColor.Red,
+                    Timestamp = DateTime.Now
+                };
 
-            var rulesMessage = await rulesChannel.SendMessageAsync(embed: createRulesEmbed).ConfigureAwait(false);
-            await rulesMessage.CreateReactionAsync(emoji);
+                await ctx.Channel.SendMessageAsync(embed: error).ConfigureAwait(false);
+            }
         }
     }
 }
